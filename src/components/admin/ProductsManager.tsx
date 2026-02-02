@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ImageUploadField } from "@/components/ImageUploadField";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, GripVertical, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -244,13 +245,11 @@ export function ProductsManager() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="image_url">Image URL</Label>
-                <Input
-                  id="image_url"
-                  type="url"
+                <Label htmlFor="image_url">Product Image</Label>
+                <ImageUploadField
                   value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://..."
+                  onChange={(value) => setFormData({ ...formData, image_url: value })}
+                  disabled={createProduct.isPending || updateProduct.isPending}
                 />
               </div>
 

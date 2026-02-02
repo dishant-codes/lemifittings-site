@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductsManager } from "./ProductsManager";
 import { OffersManager } from "./OffersManager";
+import { ImageStorageStats } from "./ImageStorageStats";
 import { LogOut, Package, Megaphone, Home } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -54,26 +55,36 @@ export function AdminDashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="products" className="gap-2">
-              <Package className="w-4 h-4" />
-              Products
-            </TabsTrigger>
-            <TabsTrigger value="offers" className="gap-2">
-              <Megaphone className="w-4 h-4" />
-              Offers
-            </TabsTrigger>
-          </TabsList>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <ImageStorageStats />
+          </div>
 
-          <TabsContent value="products">
-            <ProductsManager />
-          </TabsContent>
+          {/* Main */}
+          <div className="lg:col-span-3">
+            <Tabs defaultValue="products" className="space-y-6">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="products" className="gap-2">
+                  <Package className="w-4 h-4" />
+                  Products
+                </TabsTrigger>
+                <TabsTrigger value="offers" className="gap-2">
+                  <Megaphone className="w-4 h-4" />
+                  Offers
+                </TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="offers">
-            <OffersManager />
-          </TabsContent>
-        </Tabs>
+              <TabsContent value="products">
+                <ProductsManager />
+              </TabsContent>
+
+              <TabsContent value="offers">
+                <OffersManager />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </main>
     </div>
   );
