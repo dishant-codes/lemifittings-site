@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from "@/hooks/useProducts";
-import { Product } from "@/types/database";
+import { Product, SizePrice } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,8 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, GripVertical, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, Package, X, Image as ImageIcon, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function ProductsManager() {
   const { data: products, isLoading } = useProducts();
@@ -24,12 +25,14 @@ export function ProductsManager() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    short_description: "",
     price: 0,
+    size_prices: [] as SizePrice[],
     category: "",
     finishes: "",
     sizes: "",
     packaging_box: 1,
-    image_url: "",
+    product_images: [] as string[],
     is_new: false,
     is_bestseller: false,
     display_order: 0,
@@ -39,12 +42,14 @@ export function ProductsManager() {
     setFormData({
       name: "",
       description: "",
+      short_description: "",
       price: 0,
+      size_prices: [],
       category: "",
       finishes: "",
       sizes: "",
       packaging_box: 1,
-      image_url: "",
+      product_images: [],
       is_new: false,
       is_bestseller: false,
       display_order: products?.length || 0,
@@ -57,12 +62,14 @@ export function ProductsManager() {
     setFormData({
       name: product.name,
       description: product.description || "",
+      short_description: product.short_description || "",
       price: product.price,
+      size_prices: product.size_prices || [],
       category: product.category,
       finishes: product.finishes.join(", "),
       sizes: product.sizes?.join(", ") || "",
       packaging_box: product.packaging_box,
-      image_url: product.image_url || "",
+      product_images: product.product_images || [],
       is_new: product.is_new,
       is_bestseller: product.is_bestseller,
       display_order: product.display_order,
@@ -73,15 +80,22 @@ export function ProductsManager() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (formData.product_images.length === 0) {
+      toast.error("Please add at least one product image");
+      return;
+    }
+
     const productData = {
       name: formData.name,
       description: formData.description || null,
+      short_description: formData.short_description || null,
       price: formData.price,
+      size_prices: formData.size_prices.length > 0 ? formData.size_prices : null,
       category: formData.category,
       finishes: formData.finishes.split(",").map(f => f.trim()).filter(Boolean),
       sizes: formData.sizes ? formData.sizes.split(",").map(s => s.trim()).filter(Boolean) : null,
       packaging_box: formData.packaging_box,
-      image_url: formData.image_url || null,
+      product_images: formData.product_images,
       is_new: formData.is_new,
       is_bestseller: formData.is_bestseller,
       display_order: formData.display_order,
@@ -137,6 +151,62 @@ export function ProductsManager() {
     }
   };
 
+  const addProductImage = (imageUrl: string) => {
+    if (!imageUrl) return;
+    setFormData(prev => ({
+      ...prev,
+      product_images: [...prev.product_images, imageUrl]
+    }));
+    toast.success("Image added");
+  };
+
+  const removeProductImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      product_images: prev.product_images.filter((_, i) => i !== index)
+    }));
+    toast.success("Image removed");
+  };
+
+  const moveImageUp = (index: number) => {
+    if (index === 0) return;
+    const newImages = [...formData.product_images];
+    [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
+    setFormData(prev => ({ ...prev, product_images: newImages }));
+  };
+
+  const moveImageDown = (index: number) => {
+    if (index === formData.product_images.length - 1) return;
+    const newImages = [...formData.product_images];
+    [newImages[index + 1], newImages[index]] = [newImages[index], newImages[index + 1]];
+    setFormData(prev => ({ ...prev, product_images: newImages }));
+  };
+
+  const addSizePrice = () => {
+    setFormData(prev => ({
+      ...prev,
+      size_prices: [...prev.size_prices, { size: "", price: 0 }]
+    }));
+  };
+
+  const updateSizePrice = (index: number, field: 'size' | 'price', value: string | number) => {
+    setFormData(prev => {
+      const newSizePrices = [...prev.size_prices];
+      newSizePrices[index] = {
+        ...newSizePrices[index],
+        [field]: value
+      };
+      return { ...prev, size_prices: newSizePrices };
+    });
+  };
+
+  const removeSizePrice = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      size_prices: prev.size_prices.filter((_, i) => i !== index)
+    }));
+  };
+
   if (isLoading) {
     return <div className="animate-pulse h-64 bg-muted rounded-lg" />;
   }
@@ -158,101 +228,252 @@ export function ProductsManager() {
               Add Product
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingProduct ? "Edit Product" : "Add New Product"}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4 border-b pb-4">
+                <h3 className="font-semibold text-sm">Basic Information</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Product Name *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="BT-714 Knob"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category *</Label>
+                    <Input
+                      id="category"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      placeholder="e.g., Door Handles"
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
-                  <Input
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    placeholder="e.g., Door Handles"
-                    required
-                  />
-                </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price">Price (₹) *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    min="0"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                    required
+                  <Label htmlFor="description">Full Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Detailed product description for product details page"
+                    rows={3}
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="packaging_box">Pcs per Box *</Label>
-                  <Input
-                    id="packaging_box"
-                    type="number"
-                    min="1"
-                    value={formData.packaging_box}
-                    onChange={(e) => setFormData({ ...formData, packaging_box: Number(e.target.value) })}
+                  <Label htmlFor="short_description">Short Description *</Label>
+                  <Textarea
+                    id="short_description"
+                    value={formData.short_description}
+                    onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
+                    placeholder="Brief description for product listing (50-100 characters)"
+                    rows={2}
                     required
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="finishes">Finishes (comma-separated) *</Label>
-                  <Input
-                    id="finishes"
-                    value={formData.finishes}
-                    onChange={(e) => setFormData({ ...formData, finishes: e.target.value })}
-                    placeholder="SS, AB, BLACK, CP"
-                    required
-                  />
+              {/* Pricing */}
+              <div className="space-y-4 border-b pb-4">
+                <h3 className="font-semibold text-sm">Pricing</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Base Price (₹) *</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                      placeholder="190"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="packaging_box">Pcs per Box *</Label>
+                    <Input
+                      id="packaging_box"
+                      type="number"
+                      min="1"
+                      value={formData.packaging_box}
+                      onChange={(e) => setFormData({ ...formData, packaging_box: Number(e.target.value) })}
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sizes">Sizes (comma-separated)</Label>
-                  <Input
-                    id="sizes"
-                    value={formData.sizes}
-                    onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
-                    placeholder='4", 6", 8"'
-                  />
+
+                {/* Size-Based Pricing */}
+                <div className="space-y-3 bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <Label className="font-semibold text-sm">Size-Based Pricing (Optional)</Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={addSizePrice}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add Size Price
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Set different prices for different sizes. Users will see prices change when they select a size.
+                  </p>
+
+                  {formData.size_prices.length > 0 && (
+                    <div className="space-y-2">
+                      {formData.size_prices.map((sizePrice, idx) => (
+                        <div key={idx} className="flex gap-2 items-end bg-white p-2 rounded border">
+                          <div className="flex-1">
+                            <Label className="text-xs">Size</Label>
+                            <Input
+                              type="text"
+                              placeholder='e.g., 4", 6"'
+                              value={sizePrice.size}
+                              onChange={(e) => updateSizePrice(idx, 'size', e.target.value)}
+                              className="mt-1 text-sm"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <Label className="text-xs">Price (₹)</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={sizePrice.price}
+                              onChange={(e) => updateSizePrice(idx, 'price', Number(e.target.value))}
+                              className="mt-1 text-sm"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeSizePrice(idx)}
+                          >
+                            <X className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="image_url">Product Image</Label>
-                <ImageUploadField
-                  value={formData.image_url}
-                  onChange={(value) => setFormData({ ...formData, image_url: value })}
-                  disabled={createProduct.isPending || updateProduct.isPending}
-                />
+              {/* Specifications */}
+              <div className="space-y-4 border-b pb-4">
+                <h3 className="font-semibold text-sm">Specifications</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="finishes">Finishes (comma-separated) *</Label>
+                    <Input
+                      id="finishes"
+                      value={formData.finishes}
+                      onChange={(e) => setFormData({ ...formData, finishes: e.target.value })}
+                      placeholder="SS, AB, BLACK, CP"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sizes">Available Sizes (comma-separated)</Label>
+                    <Input
+                      id="sizes"
+                      value={formData.sizes}
+                      onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
+                      placeholder='4", 6", 8"'
+                    />
+                  </div>
+                </div>
               </div>
 
+              {/* Product Images */}
+              <div className="space-y-4 border-b pb-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm">Product Images *</h3>
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                    {formData.product_images.length} image(s)
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Upload multiple images of your product. First image will be used as default on listing page.
+                </p>
+
+                <div className="space-y-2">
+                  <div>
+                    <ImageUploadField
+                      value=""
+                      onChange={(url) => {
+                        addProductImage(url);
+                      }}
+                      disabled={createProduct.isPending || updateProduct.isPending}
+                    />
+                  </div>
+                </div>
+
+                {/* Image Gallery */}
+                {formData.product_images.length > 0 && (
+                  <div className="border rounded-lg p-3 space-y-2 bg-gray-50 max-w-full overflow-hidden">
+                    {formData.product_images.map((image, idx) => (
+                      <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded border">
+                        <img 
+                          src={image} 
+                          alt={`Product ${idx + 1}`}
+                          className="w-16 h-16 object-cover rounded flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium">Image {idx + 1}</p>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => moveImageUp(idx)}
+                            disabled={idx === 0}
+                          >
+                            <ChevronUp className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => moveImageDown(idx)}
+                            disabled={idx === formData.product_images.length - 1}
+                          >
+                            <ChevronDown className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeProductImage(idx)}
+                          >
+                            <X className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Flags */}
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
                   <Switch
@@ -272,7 +493,7 @@ export function ProductsManager() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
+              <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
@@ -316,8 +537,8 @@ export function ProductsManager() {
                   </div>
                   
                   <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center shrink-0">
-                    {product.image_url ? (
-                      <img src={product.image_url} alt={product.name} className="w-full h-full object-cover rounded-lg" />
+                    {product.product_images && product.product_images.length > 0 ? (
+                      <img src={product.product_images[0]} alt={product.name} className="w-full h-full object-cover rounded-lg" />
                     ) : (
                       <Package className="w-6 h-6 text-muted-foreground" />
                     )}
@@ -334,7 +555,14 @@ export function ProductsManager() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground truncate">{product.category}</p>
-                    <p className="text-sm font-medium">₹{product.price}/pc</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-sm font-medium">₹{product.price}/pc</p>
+                      {product.product_images && product.product_images.length > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {product.product_images.length} image(s)
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-2">

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import Autoplay from "embla-carousel-autoplay";
 import { useRef } from "react";
 
-const WHATSAPP_NUMBER = "919321768154";
+const WHATSAPP_NUMBER = "+919321768154";
 
 export function OffersCarousel() {
   const { data: offers, isLoading } = useOffers();

@@ -4,17 +4,20 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
 
-const WHATSAPP_NUMBER = "919321768154";
+const WHATSAPP_NUMBER = "+919321768154";
+const PHONE_NUMBER = "+919321768154";
+const EMAIL = "lemifittings@gmail.com";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navLinks = [
-    { label: "Home", href: "#home" },
-    { label: "Products", href: "#products" },
-    { label: "Categories", href: "#categories" },
-    { label: "About", href: "#about" },
-    { label: "Contact", href: "#contact" },
+    { label: "Home", href: "/#home" },
+    { label: "Products", href: "/#products" },
+    { label: "Categories", href: "/#categories" },
+    { label: "Blogs", href: "/blogs" },
+    { label: "About", href: "/#about" },
+    { label: "Contact", href: "/#contact" },
   ];
 
   const handleWhatsAppClick = () => {
@@ -25,10 +28,10 @@ export function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
-          <a href="#home" className="flex items-center">
-            <img src={logo} alt="LEMI Interior Fixtures" className="h-12 md:h-14 w-auto" />
+        <div className="flex items-center justify-between h-20 md:h-24">
+          {/* Logo - Increased size */}
+          <a href="#home" className="flex items-center flex-shrink-0">
+            <img src={logo} alt="LEMI Interior Fixtures" className="h-16 md:h-20 w-auto object-contain transition-transform hover:scale-105" />
           </a>
 
           {/* Desktop Navigation */}
@@ -46,7 +49,7 @@ export function Navbar() {
 
           {/* Actions */}
           <div className="flex items-center gap-4">
-            <a href="tel:+919321768154" className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a href={`tel:${PHONE_NUMBER}`} className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
               <Phone className="w-4 h-4" />
               <span>+91 93217 68154</span>
             </a>

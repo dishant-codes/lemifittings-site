@@ -4,6 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
+const PHONE_NUMBER = "+919321768154";
+const EMAIL = "lemifittings@gmail.com";
+
 export function ContactSection() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -14,14 +17,14 @@ export function ContactSection() {
     {
       icon: <Phone className="w-5 h-5" />,
       label: "Phone",
-      value: "+91 98765 43210",
-      href: "tel:+919876543210",
+      value: "+91 93217 68154",
+      href: `tel:${PHONE_NUMBER}`,
     },
     {
       icon: <Mail className="w-5 h-5" />,
       label: "Email",
-      value: "info@lemifittings.com",
-      href: "mailto:info@lemifittings.com",
+      value: EMAIL,
+      href: `mailto:${EMAIL}`,
     },
     {
       icon: <MapPin className="w-5 h-5" />,

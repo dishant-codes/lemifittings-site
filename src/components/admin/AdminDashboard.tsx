@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductsManager } from "./ProductsManager";
 import { OffersManager } from "./OffersManager";
+import { CategoriesManager } from "./CategoriesManager";
+import { BlogsManager } from "./BlogsManager";
 import { ImageStorageStats } from "./ImageStorageStats";
-import { LogOut, Package, Megaphone, Home } from "lucide-react";
+import { LogOut, Package, Megaphone, Grid3X3, Home, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -64,14 +66,22 @@ export function AdminDashboard() {
           {/* Main */}
           <div className="lg:col-span-3">
             <Tabs defaultValue="products" className="space-y-6">
-              <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsList className="grid w-full max-w-3xl grid-cols-4">
                 <TabsTrigger value="products" className="gap-2">
                   <Package className="w-4 h-4" />
                   Products
                 </TabsTrigger>
+                <TabsTrigger value="categories" className="gap-2">
+                  <Grid3X3 className="w-4 h-4" />
+                  Categories
+                </TabsTrigger>
                 <TabsTrigger value="offers" className="gap-2">
                   <Megaphone className="w-4 h-4" />
                   Offers
+                </TabsTrigger>
+                <TabsTrigger value="blogs" className="gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Blog
                 </TabsTrigger>
               </TabsList>
 
@@ -79,8 +89,16 @@ export function AdminDashboard() {
                 <ProductsManager />
               </TabsContent>
 
+              <TabsContent value="categories">
+                <CategoriesManager />
+              </TabsContent>
+
               <TabsContent value="offers">
                 <OffersManager />
+              </TabsContent>
+
+              <TabsContent value="blogs">
+                <BlogsManager />
               </TabsContent>
             </Tabs>
           </div>

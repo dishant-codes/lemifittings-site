@@ -125,16 +125,16 @@ export function ProductsSection() {
         {/* Products Grid */}
         <div
           className={cn(
-            "grid gap-6",
+            "grid gap-4 md:gap-6",
             viewMode === "grid"
-              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
               : "grid-cols-1"
           )}
         >
           {filteredProducts.map((product, index) => (
             <div
               key={product.id}
-              className="animate-fade-up"
+              className="h-full animate-fade-up"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <ProductCard product={product} />

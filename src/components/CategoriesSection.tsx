@@ -1,73 +1,85 @@
 import { ArrowRight } from "lucide-react";
-import { categories } from "@/data/products";
+import { useCategories } from "@/hooks/useCategories";
 
 export function CategoriesSection() {
-  const categoryIcons: Record<string, React.ReactNode> = {
-    knobs: (
-      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-        <div className="w-8 h-8 bg-primary rounded-lg" />
-      </div>
-    ),
-    handles: (
-      <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center">
-        <div className="w-10 h-4 bg-accent rounded-full" />
-      </div>
-    ),
-    keyholes: (
-      <div className="w-16 h-16 bg-steel/10 rounded-full flex items-center justify-center">
-        <div className="w-6 h-10 bg-steel rounded-lg" />
-      </div>
-    ),
-    accessories: (
-      <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center">
-        <div className="w-8 h-8 bg-gold/50 rounded-md rotate-45" />
-      </div>
-    ),
-  };
+  const { data: categories = [], isLoading } = useCategories();
+
+  if (isLoading) {
+    return (
+      <section className="py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="animate-pulse space-y-4">
+            <div className="h-12 bg-muted rounded-lg w-1/3 mx-auto" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-64 bg-muted rounded-2xl" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section id="categories" className="py-20 bg-muted/50">
+    <section id="categories" className="py-16 md:py-24 bg-muted/30">
       <div className="container mx-auto px-4">
         {/* Section Header */}
-        <div className="text-center mb-12">
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="font-display text-3xl md:text-5xl font-bold text-foreground mb-4">
             Shop by Category
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
             Browse our carefully organized categories to find the perfect fittings for your space.
           </p>
         </div>
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {categories.map((category, index) => (
             <a
               key={category.id}
               href={`#products`}
-              className="group relative bg-card rounded-2xl p-6 border border-border hover:border-primary/50 hover:shadow-card transition-all duration-300 animate-fade-up"
+              className="group relative bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 animate-fade-up"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              {/* Icon */}
-              <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
-                {categoryIcons[category.id]}
+              {/* Category Image or Fallback */}
+              {category.image ? (
+                <div className="w-full h-48 bg-muted overflow-hidden flex items-center justify-center">
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-48 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <p className="text-sm">No image</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Content Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                {/* Title */}
+                <h3 className="font-display text-xl md:text-2xl font-bold text-white mb-2">
+                  {category.name}
+                </h3>
+                
+                {/* Description */}
+                <p className="text-sm md:text-base text-gray-100 mb-4 line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  {category.description}
+                </p>
+
+                {/* Arrow */}
+                <div className="flex items-center gap-2 text-sm font-semibold text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <span>Browse</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
               </div>
-
-              {/* Content */}
-              <h3 className="font-display text-xl font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
-                {category.name}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {category.description}
-              </p>
-
-              {/* Arrow */}
-              <div className="flex items-center gap-2 text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                <span>Browse</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </div>
-
-              {/* Decorative gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
             </a>
           ))}
         </div>

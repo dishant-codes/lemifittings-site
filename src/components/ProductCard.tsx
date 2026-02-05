@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { MessageCircle, Heart, Eye, Package } from "lucide-react";
+import { Link } from "react-router-dom";
+import { MessageCircle, Package, Badge as BadgeIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,179 +11,131 @@ interface ProductCardProps {
   product: Product;
 }
 
-const WHATSAPP_NUMBER = "919321768154";
+const WHATSAPP_NUMBER = "+919321768154";
 
 export function ProductCard({ product }: ProductCardProps) {
-  const [selectedFinish, setSelectedFinish] = useState(product.finishes[0]);
-  const [selectedSize, setSelectedSize] = useState(product.sizes?.[0]);
   const [isHovered, setIsHovered] = useState(false);
 
-  const handleWhatsAppClick = () => {
-    const message = `Hi! I'm interested in ${product.name} (${selectedFinish}${selectedSize ? `, Size: ${selectedSize}` : ''}) - ₹${product.price}/pc. Please share more details.`;
+  const handleWhatsAppClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const message = `Hi! I'm interested in ${product.name}. Please share more details and pricing.`;
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
+  const mainImage = product.product_images && product.product_images.length > 0 
+    ? product.product_images[0] 
+    : "/placeholder.svg";
+
   return (
-    <Card
-      className="group relative overflow-hidden border-border/50 bg-card hover:shadow-card transition-all duration-500"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Badges */}
-      <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
-        {product.is_new && (
-          <Badge className="bg-accent text-accent-foreground">New</Badge>
-        )}
-        {product.is_bestseller && (
-          <Badge className="bg-primary text-primary-foreground">Bestseller</Badge>
-        )}
-      </div>
-
-      {/* Quick actions */}
-      <div
-        className={cn(
-          "absolute top-3 right-3 z-10 flex flex-col gap-2 transition-all duration-300",
-          isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
-        )}
+    <Link to={`/product/${product.id}`} className="block h-full">
+      <Card
+        className="group relative overflow-hidden border border-border/50 bg-card hover:shadow-lg transition-all duration-300 h-full flex flex-col"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        <Button
-          size="icon"
-          variant="secondary"
-          className="w-8 h-8 rounded-full bg-card/80 backdrop-blur-sm"
-        >
-          <Heart className="w-4 h-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="secondary"
-          className="w-8 h-8 rounded-full bg-card/80 backdrop-blur-sm"
-        >
-          <Eye className="w-4 h-4" />
-        </Button>
-      </div>
-
-      {/* Image */}
-      <div className="relative aspect-square bg-muted overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-card/20 to-transparent" />
-        {product.image_url ? (
-          <img 
-            src={product.image_url} 
-            alt={product.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package className="w-16 h-16 text-muted-foreground/30" />
-          </div>
-        )}
-        
-        {/* WhatsApp button on hover */}
-        <div
-          className={cn(
-            "absolute inset-x-0 bottom-0 p-4 transition-all duration-300",
-            isHovered ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
+        {/* Badges */}
+        <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+          {product.is_new && (
+            <Badge className="bg-accent text-accent-foreground text-xs">New</Badge>
           )}
-        >
-          <Button
-            className="w-full gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white"
-            onClick={handleWhatsAppClick}
-          >
-            <MessageCircle className="w-4 h-4" />
-            Enquire on WhatsApp
-          </Button>
+          {product.is_bestseller && (
+            <Badge className="bg-primary text-primary-foreground text-xs">Bestseller</Badge>
+          )}
         </div>
-      </div>
 
-      <CardContent className="p-4">
-        {/* Category */}
-        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-          {product.category}
-        </p>
+        {/* Image section */}
+        <div className="relative w-full bg-muted overflow-hidden flex-shrink-0">
+          <div className="relative aspect-square bg-gradient-to-br from-muted to-muted-foreground/5">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent" />
+            
+            <img 
+              src={mainImage} 
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
 
-        {/* Name & Price */}
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <h3 className="font-display font-semibold text-foreground group-hover:text-primary transition-colors">
+            {/* Image count badge */}
+            {product.product_images && product.product_images.length > 1 && (
+              <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded text-xs font-medium">
+                +{product.product_images.length - 1}
+              </div>
+            )}
+            
+            {/* WhatsApp button on hover */}
+            <div
+              className={cn(
+                "absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent transition-all duration-300",
+                isHovered ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
+              )}
+            >
+              <Button
+                className="w-full gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white font-medium"
+                onClick={handleWhatsAppClick}
+                size="sm"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Enquire
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <CardContent className="p-4 flex flex-col flex-grow">
+          {/* Category */}
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold mb-2">
+            {product.category}
+          </p>
+
+          {/* Product Name */}
+          <h3 className="font-semibold text-sm md:text-base text-foreground group-hover:text-primary transition-colors leading-tight mb-2 line-clamp-2">
             {product.name}
           </h3>
-          <div className="text-right">
-            <span className="font-bold text-lg text-foreground">₹{product.price}</span>
-            <span className="text-xs text-muted-foreground block">/pc</span>
-          </div>
-        </div>
 
-        {/* Description */}
-        {product.description && (
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-            {product.description}
-          </p>
-        )}
+          {/* Short Description */}
+          {product.short_description && (
+            <p className="text-xs md:text-sm text-muted-foreground mb-4 line-clamp-2 flex-grow">
+              {product.short_description}
+            </p>
+          )}
 
-        {/* Finish selector */}
-        {product.finishes.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">Finish: {selectedFinish}</p>
-            <div className="flex flex-wrap gap-1">
-              {product.finishes.slice(0, 5).map((finish) => (
-                <button
-                  key={finish}
-                  onClick={() => setSelectedFinish(finish)}
-                  className={cn(
-                    "px-2 py-1 text-xs rounded-md border transition-all",
-                    selectedFinish === finish
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:border-primary/50"
-                  )}
-                >
-                  {finish}
-                </button>
-              ))}
-              {product.finishes.length > 5 && (
-                <span className="px-2 py-1 text-xs text-muted-foreground">
-                  +{product.finishes.length - 5}
-                </span>
-              )}
+          {/* Price */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-bold text-primary">₹{product.price}</span>
+              <span className="text-xs text-muted-foreground">/pc</span>
             </div>
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Package className="w-3 h-3" />
+              {product.packaging_box}
+            </span>
           </div>
-        )}
 
-        {/* Size selector if applicable */}
-        {product.sizes && product.sizes.length > 0 && (
-          <div className="mt-3 space-y-2">
-            <p className="text-xs text-muted-foreground">Size: {selectedSize}</p>
-            <div className="flex flex-wrap gap-1">
-              {product.sizes.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={cn(
-                    "px-2 py-1 text-xs rounded-md border transition-all",
-                    selectedSize === size
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:border-primary/50"
-                  )}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
+          {/* Info badges */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {product.finishes && product.finishes.length > 0 && (
+              <span className="text-xs bg-muted px-2 py-1 rounded">
+                {product.finishes.length} finish{product.finishes.length > 1 ? 'es' : ''}
+              </span>
+            )}
+            {product.sizes && product.sizes.length > 0 && (
+              <span className="text-xs bg-muted px-2 py-1 rounded">
+                {product.sizes.length} size{product.sizes.length > 1 ? 's' : ''}
+              </span>
+            )}
           </div>
-        )}
 
-        {/* Packaging info */}
-        <p className="mt-4 text-xs text-muted-foreground">
-          📦 Packaging: {product.packaging_box} pcs/box
-        </p>
-
-        {/* Always visible WhatsApp button */}
-        <Button
-          className="w-full mt-4 gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white"
-          onClick={handleWhatsAppClick}
-        >
-          <MessageCircle className="w-4 h-4" />
-          Enquire on WhatsApp
-        </Button>
-      </CardContent>
-    </Card>
+          {/* WhatsApp button (always visible) */}
+          <Button
+            className="w-full gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white font-medium mt-auto"
+            onClick={handleWhatsAppClick}
+            size="sm"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Enquire
+          </Button>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
