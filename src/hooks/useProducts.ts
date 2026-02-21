@@ -17,6 +17,25 @@ export function useProducts() {
   });
 }
 
+export function useProductById(productId?: string) {
+  return useQuery({
+    queryKey: ["products", productId],
+    queryFn: async () => {
+      if (!productId) return null;
+      
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", productId)
+        .single();
+      
+      if (error) throw error;
+      return data as Product;
+    },
+    enabled: !!productId,
+  });
+}
+
 export function useCreateProduct() {
   const queryClient = useQueryClient();
   

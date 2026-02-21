@@ -46,7 +46,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
         {/* Image section */}
         <div className="relative w-full bg-muted overflow-hidden flex-shrink-0">
-          <div className="relative aspect-square bg-gradient-to-br from-muted to-muted-foreground/5">
+          <div className="relative aspect-[4/5] bg-gradient-to-br from-muted to-muted-foreground/5">
             <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent" />
             
             <img 
@@ -102,8 +102,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Price */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-primary">₹{product.price}</span>
-              <span className="text-xs text-muted-foreground">/pc</span>
+              <span className="text-2xl font-bold text-primary">₹{product.min_price} - ₹{product.max_price}</span>
             </div>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Package className="w-3 h-3" />

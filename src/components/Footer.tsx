@@ -105,7 +105,7 @@ export function Footer() {
             <p className="text-primary-foreground/70 text-sm mb-4">
               Subscribe to get updates on new products and offers.
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <input
                 type="email"
                 placeholder="Your email"

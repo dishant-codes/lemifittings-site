@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from "@/hooks/useProducts";
+import { useCategories } from "@/hooks/useCategories";
 import { Product, SizePrice } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,25 +9,32 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, GripVertical, Package, X, Image as ImageIcon, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, Package, X, Image as ImageIcon, ChevronUp, ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function ProductsManager() {
   const { data: products, isLoading } = useProducts();
+  const { data: categories = [] } = useCategories();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     short_description: "",
-    price: 0,
+    min_price: 0,
+    max_price: 0,
     size_prices: [] as SizePrice[],
     category: "",
     finishes: "",
@@ -43,7 +51,8 @@ export function ProductsManager() {
       name: "",
       description: "",
       short_description: "",
-      price: 0,
+      min_price: 0,
+      max_price: 0,
       size_prices: [],
       category: "",
       finishes: "",
@@ -63,7 +72,8 @@ export function ProductsManager() {
       name: product.name,
       description: product.description || "",
       short_description: product.short_description || "",
-      price: product.price,
+      min_price: product.min_price,
+      max_price: product.max_price,
       size_prices: product.size_prices || [],
       category: product.category,
       finishes: product.finishes.join(", "),
@@ -85,11 +95,22 @@ export function ProductsManager() {
       return;
     }
 
+    if (formData.min_price <= 0 || formData.max_price <= 0) {
+      toast.error("Please enter valid prices");
+      return;
+    }
+
+    if (formData.min_price > formData.max_price) {
+      toast.error("Minimum price cannot be greater than maximum price");
+      return;
+    }
+
     const productData = {
       name: formData.name,
       description: formData.description || null,
       short_description: formData.short_description || null,
-      price: formData.price,
+      min_price: formData.min_price,
+      max_price: formData.max_price,
       size_prices: formData.size_prices.length > 0 ? formData.size_prices : null,
       category: formData.category,
       finishes: formData.finishes.split(",").map(f => f.trim()).filter(Boolean),
@@ -207,27 +228,52 @@ export function ProductsManager() {
     }));
   };
 
+  // Filter products based on search and category
+  const filteredProducts = products?.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         product.short_description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = !selectedCategory || selectedCategory === '__all__' || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  }) || [];
+
+  // Pagination
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to page 1 when filters change
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryFilter = (category: string) => {
+    setSelectedCategory(category);
+    setCurrentPage(1);
+  };
+
   if (isLoading) {
     return <div className="animate-pulse h-64 bg-muted rounded-lg" />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-display font-bold">Products</h2>
-          <p className="text-muted-foreground">Manage your product catalog</p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Product
-            </Button>
-          </DialogTrigger>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-display font-bold">Products</h2>
+            <p className="text-muted-foreground">Manage your product catalog</p>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" />
+                Add Product
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -252,13 +298,24 @@ export function ProductsManager() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="category">Category *</Label>
-                    <Input
-                      id="category"
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      placeholder="e.g., Door Handles"
-                      required
-                    />
+                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                      <SelectTrigger id="category">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.length > 0 ? (
+                          categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.name}>
+                              {cat.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="" disabled>
+                            No categories available
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -292,18 +349,34 @@ export function ProductsManager() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="price">Base Price (₹) *</Label>
+                    <Label htmlFor="min_price">Minimum Price (₹) *</Label>
                     <Input
-                      id="price"
+                      id="min_price"
                       type="number"
                       min="0"
                       step="0.01"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                      placeholder="190"
+                      value={formData.min_price}
+                      onChange={(e) => setFormData({ ...formData, min_price: Number(e.target.value) })}
+                      placeholder="200"
                       required
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="max_price">Maximum Price (₹) *</Label>
+                    <Input
+                      id="max_price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.max_price}
+                      onChange={(e) => setFormData({ ...formData, max_price: Number(e.target.value) })}
+                      placeholder="700"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="packaging_box">Pcs per Box *</Label>
                     <Input
@@ -503,7 +576,48 @@ export function ProductsManager() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+            </Dialog>
+        </div>
+
+        {/* Search and Filter Section */}
+        <div className="flex flex-col gap-4 bg-card p-4 rounded-lg border">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search Input */}
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or description..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Category Filter */}
+            <div className="w-full md:w-52">
+              <Select value={selectedCategory} onValueChange={handleCategoryFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All Categories</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Results Info */}
+          <div className="text-sm text-muted-foreground">
+            Showing {paginatedProducts.length > 0 ? startIndex + 1 : 0}-{Math.min(startIndex + itemsPerPage, filteredProducts.length)} of {filteredProducts.length} products
+          </div>
+        </div>
       </div>
 
       {products?.length === 0 ? (
@@ -513,9 +627,17 @@ export function ProductsManager() {
             <p className="text-muted-foreground">No products yet. Add your first product!</p>
           </CardContent>
         </Card>
+      ) : filteredProducts.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Package className="w-12 h-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No products found matching your filters.</p>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="space-y-2">
-          {products?.map((product, index) => (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            {paginatedProducts.map((product, index) => (
             <Card key={product.id} className="group">
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
@@ -556,7 +678,7 @@ export function ProductsManager() {
                     </div>
                     <p className="text-sm text-muted-foreground truncate">{product.category}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <p className="text-sm font-medium">₹{product.price}/pc</p>
+                      <p className="text-sm font-medium">₹{product.min_price} - ₹{product.max_price}</p>
                       {product.product_images && product.product_images.length > 0 && (
                         <span className="text-xs text-muted-foreground">
                           {product.product_images.length} image(s)
@@ -585,7 +707,48 @@ export function ProductsManager() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 p-4 bg-card rounded-lg border">
+              <div className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                      className="w-10"
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

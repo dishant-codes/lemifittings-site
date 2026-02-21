@@ -1,15 +1,18 @@
 /**
  * Image Upload Handler
- * Handles local file uploads and generates image paths
+ * Handles file uploads to Supabase Storage and manages image URLs
+ * Images are stored as files with only URLs in the database for faster loading
  */
 
-const UPLOAD_DIR = "/uploads/products";
+import { supabase } from "@/integrations/supabase/client";
+
+const STORAGE_BUCKET = "product-images";
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 export interface ImageUploadResult {
   success: boolean;
-  imagePath?: string;
+  imageUrl?: string;
   error?: string;
 }
 
@@ -35,19 +38,6 @@ export const validateImageFile = (file: File): { valid: boolean; error?: string 
 };
 
 /**
- * Converts file to base64 for storage (client-side approach)
- * This is useful if you want to store images as base64 in the database
- */
-export const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
-
-/**
  * Generates a unique filename for the uploaded image
  */
 export const generateImageFilename = (originalFileName: string): string => {
@@ -58,14 +48,7 @@ export const generateImageFilename = (originalFileName: string): string => {
 };
 
 /**
- * Generates the image path that will be stored in the database
- */
-export const generateImagePath = (filename: string): string => {
-  return `${UPLOAD_DIR}/${filename}`;
-};
-
-/**
- * Creates a blob URL for preview purposes
+ * Creates a blob URL for preview purposes (for client-side preview before upload)
  */
 export const createPreviewUrl = (file: File): string => {
   return URL.createObjectURL(file);
@@ -79,10 +62,10 @@ export const revokePreviewUrl = (url: string): void => {
 };
 
 /**
- * Handles image upload with IndexedDB fallback for local storage
- * This stores base64 images locally
+ * Uploads image to Supabase Storage and returns the public URL
+ * This stores the actual image file in Supabase Storage, not in the database
  */
-export const uploadImageToLocalStorage = async (file: File): Promise<ImageUploadResult> => {
+export const uploadImageToSupabase = async (file: File): Promise<ImageUploadResult> => {
   try {
     // Validate file
     const validation = validateImageFile(file);
@@ -90,31 +73,35 @@ export const uploadImageToLocalStorage = async (file: File): Promise<ImageUpload
       return { success: false, error: validation.error };
     }
 
-    // Convert to base64
-    const base64Data = await fileToBase64(file);
-
-    // Generate filename and path
+    // Generate unique filename
     const filename = generateImageFilename(file.name);
-    const imagePath = generateImagePath(filename);
+    const filePath = `products/${filename}`;
 
-    // Store in localStorage (for development)
-    // Note: localStorage has 5-10MB limit per domain, so this is for small images only
-    try {
-      const imageData = {
-        filename,
-        data: base64Data,
-        uploadedAt: new Date().toISOString(),
+    // Upload to Supabase Storage
+    const { data, error: uploadError } = await supabase
+      .storage
+      .from(STORAGE_BUCKET)
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      return {
+        success: false,
+        error: `Upload failed: ${uploadError.message}`,
       };
-      const storageKey = `image_${filename}`;
-      localStorage.setItem(storageKey, JSON.stringify(imageData));
-    } catch (storageError) {
-      console.warn("localStorage is full, falling back to IndexedDB:", storageError);
-      // In production, you'd implement IndexedDB here
     }
+
+    // Get public URL
+    const { data: publicUrlData } = supabase
+      .storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(filePath);
 
     return {
       success: true,
-      imagePath: base64Data, // Return base64 directly for simple implementation
+      imageUrl: publicUrlData.publicUrl,
     };
   } catch (error) {
     return {
@@ -125,32 +112,40 @@ export const uploadImageToLocalStorage = async (file: File): Promise<ImageUpload
 };
 
 /**
- * Retrieves image from local storage
+ * Deletes image from Supabase Storage
  */
-export const getImageFromLocalStorage = (filename: string): string | null => {
+export const deleteImageFromSupabase = async (imageUrl: string): Promise<boolean> => {
   try {
-    const storageKey = `image_${filename}`;
-    const imageData = localStorage.getItem(storageKey);
-    if (imageData) {
-      const parsed = JSON.parse(imageData);
-      return parsed.data;
+    // Extract file path from URL
+    const urlParts = imageUrl.split(`/${STORAGE_BUCKET}/`);
+    if (urlParts.length !== 2) {
+      console.error("Invalid image URL format");
+      return false;
     }
-  } catch (error) {
-    console.error("Failed to retrieve image from storage:", error);
-  }
-  return null;
-};
 
-/**
- * Deletes image from local storage
- */
-export const deleteImageFromLocalStorage = (filename: string): boolean => {
-  try {
-    const storageKey = `image_${filename}`;
-    localStorage.removeItem(storageKey);
+    const filePath = urlParts[1].split("?")[0]; // Remove query params
+
+    const { error } = await supabase
+      .storage
+      .from(STORAGE_BUCKET)
+      .remove([filePath]);
+
+    if (error) {
+      console.error("Failed to delete image:", error);
+      return false;
+    }
+
     return true;
   } catch (error) {
     console.error("Failed to delete image from storage:", error);
     return false;
   }
+};
+
+/**
+ * Backward compatibility: alias for uploadImageToSupabase
+ * Used to upload image and get URL that will be stored in database
+ */
+export const uploadImageToLocalStorage = async (file: File): Promise<ImageUploadResult> => {
+  return uploadImageToSupabase(file);
 };

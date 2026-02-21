@@ -1,7 +1,11 @@
 import { ArrowRight } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
 
-export function CategoriesSection() {
+interface CategoriesSectionProps {
+  onCategorySelect?: (categoryId: string) => void;
+}
+
+export function CategoriesSection({ onCategorySelect }: CategoriesSectionProps) {
   const { data: categories = [], isLoading } = useCategories();
 
   if (isLoading) {
@@ -37,10 +41,10 @@ export function CategoriesSection() {
         {/* Categories Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {categories.map((category, index) => (
-            <a
+            <button
               key={category.id}
-              href={`#products`}
-              className="group relative bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 animate-fade-up"
+              onClick={() => onCategorySelect?.(category.name)}
+              className="group relative bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 animate-fade-up text-left"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Category Image or Fallback */}
@@ -80,7 +84,7 @@ export function CategoriesSection() {
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
-            </a>
+            </button>
           ))}
         </div>
       </div>

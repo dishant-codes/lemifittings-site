@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, MessageCircle, Package, Share2, Check, ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronLeft, MessageCircle, Package, Share2, Check, ChevronRight, ChevronDown, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { useProducts } from "@/hooks/useProducts";
+import { useProductById } from "@/hooks/useProducts";
 import { cn } from "@/lib/utils";
 
 const WHATSAPP_NUMBER = "+919321768154";
@@ -44,10 +44,8 @@ const getFinishColor = (finish: string): string => {
 export default function ProductDetails() {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
-  const { data: products = [], isLoading } = useProducts();
+  const { data: product, isLoading, error } = useProductById(productId);
   
-  const product = products.find(p => p.id === productId);
-
   const [selectedFinish, setSelectedFinish] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -62,6 +60,39 @@ export default function ProductDetails() {
     }
   }, [product?.id]);
 
+  // Calculate price - must be called before any conditional returns
+  const currentPrice = useMemo(() => {
+    if (!product) return 0;
+    
+    // If size-based pricing is available, use it
+    if (selectedSize && product.size_prices && product.size_prices.length > 0) {
+      const sizePrice = product.size_prices.find(sp => sp.size === selectedSize);
+      if (sizePrice) {
+        return sizePrice.price;
+      }
+    }
+    
+    // Otherwise, use the minimum price from the range
+    return product.min_price || 0;
+  }, [selectedSize, product]);
+
+  const totalPrice = currentPrice * quantity;
+
+  const handleWhatsAppClick = () => {
+    if (!product) return;
+    const message = `Hi! I'm interested in:\n\nProduct: ${product.name}\nFinish: ${selectedFinish}\n${selectedSize ? `Size: ${selectedSize}\n` : ''}Price: ₹${currentPrice}/pc\nQuantity: ${quantity} pcs\nTotal: ₹${totalPrice.toLocaleString('en-IN')}\n\nPlease share more details and availability.`;
+    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleCopyProductLink = () => {
+    const productLink = `${window.location.origin}/product/${productId}`;
+    navigator.clipboard.writeText(productLink);
+    setShowCopied(true);
+    setTimeout(() => setShowCopied(false), 2000);
+  };
+
+  // Now handle conditional rendering after all hooks are called
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -75,13 +106,13 @@ export default function ProductDetails() {
     );
   }
 
-  if (!product) {
+  if (error || !product) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="container mx-auto px-4 py-20 text-center">
           <h1 className="text-4xl font-bold mb-4">Product Not Found</h1>
-          <p className="text-muted-foreground mb-8">The product you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground mb-8">The product you're looking for doesn't exist or has been removed.</p>
           <Button onClick={() => navigate("/")} className="gap-2">
             <ChevronLeft className="w-4 h-4" />
             Back to Home
@@ -91,30 +122,6 @@ export default function ProductDetails() {
       </div>
     );
   }
-
-  const currentPrice = useMemo(() => {
-    if (!selectedSize || !product.size_prices || product.size_prices.length === 0) {
-      return product.price;
-    }
-    
-    const sizePrice = product.size_prices.find(sp => sp.size === selectedSize);
-    return sizePrice ? sizePrice.price : product.price;
-  }, [selectedSize, product]);
-
-  const totalPrice = currentPrice * quantity;
-
-  const handleWhatsAppClick = () => {
-    const message = `Hi! I'm interested in:\n\nProduct: ${product.name}\nFinish: ${selectedFinish}\n${selectedSize ? `Size: ${selectedSize}\n` : ''}Price: ₹${currentPrice}/pc\nQuantity: ${quantity} pcs\nTotal: ₹${totalPrice.toLocaleString('en-IN')}\n\nPlease share more details and availability.`;
-    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
-  const handleCopyMessage = () => {
-    const message = `Hi! I'm interested in:\n\nProduct: ${product.name}\nFinish: ${selectedFinish}\n${selectedSize ? `Size: ${selectedSize}\n` : ''}Price: ₹${currentPrice}/pc\nQuantity: ${quantity} pcs\nTotal: ₹${totalPrice.toLocaleString('en-IN')}\n\nPlease share more details and availability.`;
-    navigator.clipboard.writeText(message);
-    setShowCopied(true);
-    setTimeout(() => setShowCopied(false), 2000);
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -137,7 +144,7 @@ export default function ProductDetails() {
             {/* Main Image with Gallery */}
             <div className="space-y-4">
               {/* Main Image */}
-              <div className="sticky top-20 bg-muted rounded-lg overflow-hidden aspect-square flex items-center justify-center relative group">
+              <div className="sticky top-20 bg-muted rounded-lg overflow-hidden aspect-[4/5] flex items-center justify-center relative group">
                 <img 
                   src={product.product_images && product.product_images.length > 0 ? product.product_images[currentImageIndex] : "/placeholder.svg"} 
                   alt={product.name}
@@ -316,7 +323,7 @@ export default function ProductDetails() {
               <Button 
                 variant="outline"
                 className="flex-1 gap-2 h-12"
-                onClick={handleCopyMessage}
+                onClick={handleCopyProductLink}
               >
                 {showCopied ? (
                   <>
@@ -325,8 +332,8 @@ export default function ProductDetails() {
                   </>
                 ) : (
                   <>
-                    <Share2 className="w-5 h-5" />
-                    Copy Message
+                    <LinkIcon className="w-5 h-5" />
+                    Copy Product Link
                   </>
                 )}
               </Button>

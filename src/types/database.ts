@@ -15,7 +15,8 @@ export interface Product {
   name: string;
   description: string | null;
   short_description: string | null;
-  price: number; // Base/default price
+  min_price: number; // Minimum price in range
+  max_price: number; // Maximum price in range
   size_prices?: SizePrice[] | null; // Price variations by size
   category: string;
   finishes: string[];

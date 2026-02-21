@@ -8,7 +8,7 @@ import {
   validateImageFile,
   createPreviewUrl,
   revokePreviewUrl,
-  uploadImageToLocalStorage,
+  uploadImageToSupabase,
 } from "@/lib/imageUpload";
 import { toast } from "sonner";
 
@@ -30,7 +30,6 @@ export function ImageUploadField({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadedFileName, setUploadedFileName] = useState<string>("");
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,28 +44,36 @@ export function ImageUploadField({
 
     setIsLoading(true);
     try {
-      // Upload to local storage and get base64
-      const result = await uploadImageToLocalStorage(file);
+      // Create preview immediately for better UX
+      const previewUrl = createPreviewUrl(file);
+      setPreview(previewUrl);
 
-      if (result.success && result.imagePath) {
-        // Create preview URL
-        const previewUrl = createPreviewUrl(file);
-        setPreview(previewUrl);
-        setUploadedFileName(file.name);
+      // Upload to Supabase Storage
+      const result = await uploadImageToSupabase(file);
 
-        // Store base64 in the form
-        onChange(result.imagePath);
-
+      if (result.success && result.imageUrl) {
+        // Store the image URL (not base64) in the form
+        onChange(result.imageUrl);
+        
         // Call optional callback with file
         onFileSelect?.(file);
 
         toast.success("Image uploaded successfully!");
       } else {
         toast.error(result.error || "Upload failed");
+        // Cleanup preview on failure
+        if (previewUrl) {
+          revokePreviewUrl(previewUrl);
+        }
+        setPreview(null);
       }
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload image");
+      if (preview) {
+        revokePreviewUrl(preview);
+      }
+      setPreview(null);
     } finally {
       setIsLoading(false);
       // Reset file input
@@ -81,7 +88,6 @@ export function ImageUploadField({
       revokePreviewUrl(preview);
     }
     setPreview(null);
-    setUploadedFileName("");
     onChange("");
   };
 
@@ -106,11 +112,6 @@ export function ImageUploadField({
           >
             <X className="w-4 h-4" />
           </button>
-          {uploadedFileName && (
-            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate">
-              {uploadedFileName}
-            </div>
-          )}
         </div>
       )}
 
@@ -156,9 +157,9 @@ export function ImageUploadField({
           id="image-url"
           type="url"
           placeholder="https://..."
-          value={!preview && typeof value === "string" && !value.startsWith("data:") ? value : ""}
+          value={!preview && typeof value === "string" ? value : ""}
           onChange={(e) => {
-            if (!preview && e.target.value && !e.target.value.startsWith("data:")) {
+            if (!preview && e.target.value) {
               onChange(e.target.value);
             }
           }}
@@ -166,14 +167,6 @@ export function ImageUploadField({
           className="text-xs"
         />
       </div>
-
-      {/* File Status */}
-      {uploadedFileName && (
-        <div className="flex items-center gap-2 text-sm text-green-600">
-          <Check className="w-4 h-4" />
-          <span>Image ready to save</span>
-        </div>
-      )}
     </div>
   );
 }

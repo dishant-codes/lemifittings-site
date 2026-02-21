@@ -1,16 +1,23 @@
 import { useState, useMemo } from "react";
-import { Search, Filter, Grid, List } from "lucide-react";
+import { Search, Filter, Grid, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 import { cn } from "@/lib/utils";
 
-export function ProductsSection() {
+const ITEMS_PER_PAGE = 12;
+
+interface ProductsSectionProps {
+  selectedCategory?: string;
+  onCategoryChange?: (category: string) => void;
+}
+
+export function ProductsSection({ selectedCategory = "all", onCategoryChange }: ProductsSectionProps) {
   const { data: products, isLoading } = useProducts();
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const categories = useMemo(() => {
     if (!products) return [];
@@ -29,6 +36,27 @@ export function ProductsSection() {
       return matchesCategory && matchesSearch;
     });
   }, [products, selectedCategory, searchQuery]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, endIndex);
+  }, [filteredProducts, currentPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to products section
+    const productsSection = document.getElementById("products");
+    if (productsSection) {
+      productsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleCategoryChange = (category: string) => {
+    onCategoryChange?.(category);
+    setCurrentPage(1);
+  };
 
   if (isLoading) {
     return (
@@ -70,7 +98,10 @@ export function ProductsSection() {
             <Input
               placeholder="Search products..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               className="pl-10"
             />
           </div>
@@ -79,7 +110,7 @@ export function ProductsSection() {
           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
             <Button
               variant={selectedCategory === "all" ? "default" : "outline"}
-              onClick={() => setSelectedCategory("all")}
+              onClick={() => handleCategoryChange("all")}
               className="whitespace-nowrap"
             >
               All Products
@@ -88,7 +119,7 @@ export function ProductsSection() {
               <Button
                 key={category.id}
                 variant={selectedCategory === category.id ? "default" : "outline"}
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => handleCategoryChange(category.id)}
                 className="whitespace-nowrap"
               >
                 {category.name}
@@ -119,7 +150,8 @@ export function ProductsSection() {
 
         {/* Results count */}
         <p className="text-sm text-muted-foreground mb-6">
-          Showing {filteredProducts.length} of {products?.length || 0} products
+          Showing {paginatedProducts.length} of {filteredProducts.length} products
+          {filteredProducts.length !== products?.length && ` (filtered from ${products?.length || 0} total)`}
         </p>
 
         {/* Products Grid */}
@@ -131,7 +163,7 @@ export function ProductsSection() {
               : "grid-cols-1"
           )}
         >
-          {filteredProducts.map((product, index) => (
+          {paginatedProducts.map((product, index) => (
             <div
               key={product.id}
               className="h-full animate-fade-up"
@@ -141,6 +173,70 @@ export function ProductsSection() {
             </div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {filteredProducts.length > ITEMS_PER_PAGE && (
+          <div className="flex items-center justify-center gap-2 mt-12 mb-8">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="h-9 w-9"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+              // Show first page, last page, current page, and pages around current
+              const isVisible =
+                page === 1 ||
+                page === totalPages ||
+                (page >= currentPage - 1 && page <= currentPage + 1);
+
+              if (!isVisible) {
+                // Show ellipsis if skipping pages
+                if (page === currentPage - 2) {
+                  return (
+                    <span key="ellipsis-start" className="text-muted-foreground">
+                      ...
+                    </span>
+                  );
+                }
+                if (page === currentPage + 2) {
+                  return (
+                    <span key="ellipsis-end" className="text-muted-foreground">
+                      ...
+                    </span>
+                  );
+                }
+                return null;
+              }
+
+              return (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePageChange(page)}
+                  className="h-9 min-w-9"
+                >
+                  {page}
+                </Button>
+              );
+            })}
+
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="h-9 w-9"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
 
         {/* No results */}
         {filteredProducts.length === 0 && (
