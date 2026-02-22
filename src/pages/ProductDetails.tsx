@@ -234,6 +234,9 @@ export default function ProductDetails() {
                     <span className="text-4xl font-bold text-primary">₹{currentPrice}</span>
                     <span className="text-sm text-muted-foreground">/piece</span>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Price Range: ₹{product.min_price} - ₹{product.max_price}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     Packaging: {product.packaging_box} pieces per box
                   </p>
