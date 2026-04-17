@@ -25,7 +25,7 @@ export function AdminLogin() {
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success("Account created! You can now sign in.");
+          toast.success("Account created! You can now sign-in.");
           setIsSignUp(false);
         }
       } else {
