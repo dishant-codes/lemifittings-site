@@ -22,6 +22,7 @@ export interface Product {
   finishes: string[];
   product_images: string[]; // Array of multiple product images
   sizes: string[] | null;
+  slug?: string | null;
   packaging_box: number;
   is_new: boolean;
   is_bestseller: boolean;

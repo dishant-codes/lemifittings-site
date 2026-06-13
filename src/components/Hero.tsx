@@ -45,17 +45,17 @@ export function Hero() {
                 asChild
               >
                 <a href="#products">
-                  Explore Products
+                  Explore Collection
                   <ArrowRight className="w-4 h-4" />
                 </a>
               </Button>
               <Button 
                 size="lg" 
                 variant="secondary"
-                className="bg-primary-foreground/20 border border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/30 backdrop-blur-sm"
-                asChild
+                className="bg-[#25D366] text-white hover:bg-[#128C7E] backdrop-blur-sm"
+                onClick={() => window.open(`https://wa.me/+919321768154?text=${encodeURIComponent("Hi, I need a WhatsApp inquiry for premium fittings.")}`, '_blank')}
               >
-                <a href="#contact">Contact Us</a>
+                WhatsApp Inquiry
               </Button>
             </div>
 

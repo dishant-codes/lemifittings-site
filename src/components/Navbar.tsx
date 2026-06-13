@@ -13,7 +13,6 @@ export function Navbar() {
 
   const navLinks = [
     { label: "Home", href: "/#home" },
-    { label: "Products", href: "/#products" },
     { label: "Categories", href: "/#categories" },
     { label: "Blogs", href: "/blogs" },
     { label: "About", href: "/#about" },
@@ -25,6 +24,27 @@ export function Navbar() {
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
+  const megaCategories = [
+    { label: "Handles", href: "/#products" },
+    { label: "Knobs", href: "/#products" },
+    { label: "Wooden Handles", href: "/#products" },
+    { label: "Glass Handles", href: "/#products" },
+  ];
+
+  const megaCollections = [
+    { label: "Matte Black", href: "/#collections" },
+    { label: "Rosewood Series", href: "/#collections" },
+    { label: "Signature Series", href: "/#collections" },
+    { label: "Steam Beech", href: "/#collections" },
+  ];
+
+  const megaFinishes = [
+    { label: "Matt", href: "/#products" },
+    { label: "Chrome", href: "/#products" },
+    { label: "Gold", href: "/#products" },
+    { label: "Black", href: "/#products" },
+  ];
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-4">
@@ -35,7 +55,62 @@ export function Navbar() {
           </a>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-6">
+            <div className="relative group">
+              <button
+                type="button"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                Products
+              </button>
+              <div className="absolute left-0 top-full z-50 mt-3 w-[650px] max-w-[95vw] rounded-3xl border border-border bg-background p-5 shadow-xl opacity-0 invisible scale-95 transform transition-all duration-200 ease-out group-hover:opacity-100 group-hover:visible group-hover:scale-100 group-hover:pointer-events-auto pointer-events-none">
+                <div className="grid gap-6 md:grid-cols-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-3">Categories</p>
+                    <div className="space-y-2">
+                      {megaCategories.map((item) => (
+                        <a
+                          key={item.label}
+                          href={item.href}
+                          className="block rounded-2xl px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                        >
+                          {item.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-3">Collections</p>
+                    <div className="space-y-2">
+                      {megaCollections.map((item) => (
+                        <a
+                          key={item.label}
+                          href={item.href}
+                          className="block rounded-2xl px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                        >
+                          {item.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-3">Finishes</p>
+                    <div className="space-y-2">
+                      {megaFinishes.map((item) => (
+                        <a
+                          key={item.label}
+                          href={item.href}
+                          className="block rounded-2xl px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                        >
+                          {item.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {navLinks.map((link) => (
               <a
                 key={link.label}

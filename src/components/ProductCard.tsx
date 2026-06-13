@@ -28,7 +28,7 @@ export function ProductCard({ product }: ProductCardProps) {
     : "/placeholder.svg";
 
   return (
-    <Link to={`/product/${product.id}`} className="block h-full">
+    <Link to={`/product/${product.slug || product.id}`} className="block h-full">
       <Card
         className="group relative overflow-hidden border border-border/50 bg-card hover:shadow-lg transition-all duration-300 h-full flex flex-col"
         onMouseEnter={() => setIsHovered(true)}
