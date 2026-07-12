@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useCategories } from "@/hooks/useCategories";
 
 interface CategoriesSectionProps {
@@ -41,9 +42,10 @@ export function CategoriesSection({ onCategorySelect }: CategoriesSectionProps) 
         {/* Categories Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {categories.map((category, index) => (
-            <button
+            <Link
               key={category.id}
-              onClick={() => onCategorySelect?.(category.name)}
+              to={`/category/${category.id}`}
+              onClick={() => onCategorySelect?.(category.id)}
               className="group relative bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 animate-fade-up text-left"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
@@ -84,7 +86,7 @@ export function CategoriesSection({ onCategorySelect }: CategoriesSectionProps) 
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
-            </button>
+            </Link>
           ))}
         </div>
       </div>

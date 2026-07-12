@@ -57,12 +57,12 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             <div className="relative group">
-              <button
+              {/* <button
                 type="button"
                 className="inline-flex h-10 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
                 Products
-              </button>
+              </button> */}
               <div className="absolute left-0 top-full z-50 mt-3 w-[650px] max-w-[95vw] rounded-3xl border border-border bg-background p-5 shadow-xl opacity-0 invisible scale-95 transform transition-all duration-200 ease-out group-hover:opacity-100 group-hover:visible group-hover:scale-100 group-hover:pointer-events-auto pointer-events-none">
                 <div className="grid gap-6 md:grid-cols-3">
                   <div>

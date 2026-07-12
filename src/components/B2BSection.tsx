@@ -30,7 +30,7 @@ export function B2BSection() {
                 </a>
               </Button>
               <Button asChild className="bg-white text-slate-950 hover:bg-slate-100 gap-2">
-                <a href="/catalog.pdf" target="_blank" rel="noreferrer">
+                <a href="https://drive.google.com/drive/folders/1AgjX2kDB_ERnhWJUM79RA8u76AOcdQnI" target="_blank" rel="noreferrer">
                   <Download className="w-4 h-4" />
                   Download Catalog
                 </a>

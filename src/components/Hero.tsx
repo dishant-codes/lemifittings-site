@@ -1,6 +1,6 @@
 import { ArrowRight, Award, Clock, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import heroImage from "@/assets/hero-fittings.jpg";
+import heroImage from "../assets/hero.jpeg";
 
 export function Hero() {
   return (

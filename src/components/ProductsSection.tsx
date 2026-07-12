@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
+import { useCategories } from "@/hooks/useCategories";
 import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 12;
@@ -15,27 +16,48 @@ interface ProductsSectionProps {
 
 export function ProductsSection({ selectedCategory = "all", onCategoryChange }: ProductsSectionProps) {
   const { data: products, isLoading } = useProducts();
+  const { data: categories = [] } = useCategories();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const categories = useMemo(() => {
-    if (!products) return [];
-    const uniqueCategories = [...new Set(products.map(p => p.category))];
-    return uniqueCategories.map(cat => ({ id: cat, name: cat }));
-  }, [products]);
+  const normalizeCategoryKey = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+  const categoryOptions = useMemo(() => {
+    return categories.map((category) => ({ id: category.id, name: category.name }));
+  }, [categories]);
+
+  const categoryNameById = useMemo(() => {
+    return categories.reduce<Record<string, string>>((acc, category) => {
+      acc[category.id] = category.name;
+      return acc;
+    }, {});
+  }, [categories]);
 
   const filteredProducts = useMemo(() => {
     if (!products) return [];
+
+    const selectedCategoryName = categoryNameById[selectedCategory] || selectedCategory;
+    const normalizedSelectedCategory = normalizeCategoryKey(selectedCategoryName);
+
     return products.filter((product) => {
+      const normalizedProductCategory = normalizeCategoryKey(product.category);
       const matchesCategory =
-        selectedCategory === "all" || product.category === selectedCategory;
+        selectedCategory === "all" ||
+        normalizedProductCategory === normalizedSelectedCategory ||
+        normalizedProductCategory.includes(normalizedSelectedCategory) ||
+        normalizedSelectedCategory.includes(normalizedProductCategory);
       const matchesSearch =
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (product.description?.toLowerCase() || "").includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [products, selectedCategory, searchQuery]);
+  }, [products, selectedCategory, searchQuery, categoryNameById]);
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const paginatedProducts = useMemo(() => {
@@ -91,10 +113,10 @@ export function ProductsSection({ selectedCategory = "all", onCategoryChange }: 
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <div className="flex flex-col gap-4 mb-8">
           {/* Search */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Search products..."
               value={searchQuery}
@@ -102,12 +124,12 @@ export function ProductsSection({ selectedCategory = "all", onCategoryChange }: 
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="pl-10"
+              className="h-12 pl-11 rounded-2xl border-border bg-card/80 shadow-sm focus-visible:ring-primary/40 focus-visible:border-primary/60"
             />
           </div>
 
           {/* Category Filter */}
-          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 pt-1">
             <Button
               variant={selectedCategory === "all" ? "default" : "outline"}
               onClick={() => handleCategoryChange("all")}
@@ -115,7 +137,7 @@ export function ProductsSection({ selectedCategory = "all", onCategoryChange }: 
             >
               All Products
             </Button>
-            {categories.map((category) => (
+            {categoryOptions.map((category) => (
               <Button
                 key={category.id}
                 variant={selectedCategory === category.id ? "default" : "outline"}
